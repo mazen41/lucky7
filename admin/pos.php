@@ -395,6 +395,27 @@ ob_start();
             </button>
         </div>
 
+        <!-- Table Management -->
+        <div class="mb-3 rounded-xl border border-gray-200 p-3 bg-background no-print">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="font-bold text-secondary" x-text="t('tableManagement')"></h3>
+                <button @click="showCreateTableModal = true" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg" x-text="t('newTable')"></button>
+            </div>
+            <template x-if="activeTable">
+                <div>
+                    <p class="text-sm font-semibold text-text-dark"><span x-text="activeTable.name"></span> • <span x-text="activeTable.table_type === 'split' ? t('splitTable') : t('normalTable')"></span></p>
+                    <div x-show="activeTable.table_type === 'split'" class="mt-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <p class="text-xs text-accent" x-text="t('customers')"></p>
+                            <button @click="showAddTableCustomerModal = true" class="text-xs text-primary font-semibold" x-text="t('addCustomer')"></button>
+                        </div>
+                        <div class="flex flex-wrap gap-1"><template x-for="customer in splitTableCustomers" :key="customer.id"><span class="px-2 py-1 text-xs bg-white rounded border" x-text="customer.name"></span></template></div>
+                    </div>
+                </div>
+            </template>
+            <p x-show="!activeTable" class="text-xs text-accent" x-text="t('noTableSelected')"></p>
+        </div>
+
         <!-- Customer -->
         <div class="relative mb-4 flex-shrink-0" @click.away="customerSearchResults = []">
             <input type="text" x-model="invoice.customer_name" :placeholder="t('customerNamePlaceholder')" @input.debounce.300ms="searchCustomers()" @focus="searchCustomers()" class="w-full py-2.5 pl-4 pr-4 border border-gray-200 rounded-xl bg-background focus:ring-primary focus:border-primary shadow-sm transition-all duration-200 text-text-dark">
@@ -657,6 +678,8 @@ ob_start();
             </div>
         </div>
     </div>
+        <div x-cloak x-show="showCreateTableModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"><div class="bg-white rounded-xl p-4 w-full max-w-sm"><h3 class="font-bold mb-3" x-text="t('newTable')"></h3><input x-model="createTableForm.name" class="w-full border rounded p-2 mb-2" placeholder="Table name"><select x-model="createTableForm.table_type" class="w-full border rounded p-2 mb-3"><option value="normal" x-text="t('normalTable')"></option><option value="split" x-text="t('splitTable')"></option></select><button @click="createTable()" class="w-full bg-primary text-white rounded p-2">Save</button></div></div>
+        <div x-cloak x-show="showAddTableCustomerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"><div class="bg-white rounded-xl p-4 w-full max-w-sm"><h3 class="font-bold mb-3" x-text="t('addCustomer')"></h3><input x-model="newSplitCustomerName" class="w-full border rounded p-2 mb-3" placeholder="Customer name"><button @click="addSplitCustomer()" class="w-full bg-primary text-white rounded p-2">Save</button></div></div>
     <?php #endregion ?>
 </div>
 
@@ -692,6 +715,7 @@ ob_start();
                     confirmCloseShiftText: 'هل أنت متأكد من إغلاق الوردية الحالية؟',
                     totalSales: 'إجمالي المبيعات', totalCashSales: 'مبيعات نقدية', totalCardSales: 'مبيعات بطاقة',
                     totalBankTransferSales: 'مبيعات تحويل بنكي', expectedCash: 'النقدية المتوقعة',
+                    tableManagement: 'إدارة الطاولات', newTable: 'طاولة جديدة', normalTable: 'طاولة عادية', splitTable: 'طاولة عملاء منفصلة', customers: 'العملاء', addCustomer: 'إضافة عميل', noTableSelected: 'لم يتم اختيار طاولة', chooseCustomerForItem: 'اختر العميل لهذا العنصر',
                 },
                 en: {
                     posTitle: 'Point of Sale', posSubtitle: 'Order Management', openShift: 'Open Shift', closeShift: 'Close Shift',
@@ -717,6 +741,7 @@ ob_start();
                     confirmCloseShiftText: 'Are you sure you want to close the current shift?',
                     totalSales: 'Total Sales', totalCashSales: 'Cash Sales', totalCardSales: 'Card Sales',
                     totalBankTransferSales: 'Bank Transfer Sales', expectedCash: 'Expected Cash',
+                    tableManagement: 'Table Management', newTable: 'New Table', normalTable: 'Normal Table', splitTable: 'Customer-Split Table', customers: 'Customers', addCustomer: 'Add Customer', noTableSelected: 'No table selected', chooseCustomerForItem: 'Choose customer for this item',
                 }
             },
             t(key) { return this.translations[this.currentLanguage][key] || key; },
@@ -755,6 +780,9 @@ ob_start();
             roleDiscountPolicy: <?php echo json_encode($discount_policy); ?>,
             closingCash: 0,
             cashPayouts: 0,
+            tables: [], activeTable: null, splitTableCustomers: [],
+            showCreateTableModal: false, showAddTableCustomerModal: false,
+            createTableForm: { name: '', table_type: 'normal' }, newSplitCustomerName: '',
 
             // COMPUTED PROPERTIES
             get filteredItems() {
@@ -769,7 +797,7 @@ ob_start();
             },
 
             // METHODS
-            init() { this.calculateTotals(); },
+            init() { this.calculateTotals(); this.fetchTables(); },
             openPaymentModal() {
                 this.cashAmount = this.invoice.total_amount;
                 this.cardAmount = 0;
@@ -823,11 +851,18 @@ ob_start();
             // --- END OF EDITED TAX LOGIC ---
 
             addItem(item) {
+                let assignedCustomerId = null;
+                if (this.activeTable && this.activeTable.table_type === 'split') {
+                    if (!this.splitTableCustomers.length) { alert('Please add customer first'); return; }
+                    const customerList = this.splitTableCustomers.map(c => `${c.id}:${c.name}`).join("\n");
+                    const selected = prompt(`${this.t('chooseCustomerForItem')}\n${customerList}`);
+                    assignedCustomerId = parseInt(selected, 10); if (!assignedCustomerId) return;
+                }
                 if (item.item_type === 'product' && (!item.stock_quantity || item.stock_quantity <= 0)) {
                     alert(this.t('alertProductOutOfStock'));
                     return;
                 }
-                const existingIndex = this.invoice.items.findIndex(i => i.type === item.item_type && i.id === item.id);
+                const existingIndex = this.invoice.items.findIndex(i => i.type === item.item_type && i.id === item.id && (i.table_customer_id || null) === assignedCustomerId);
                 if (existingIndex >= 0) {
                     const existingItem = this.invoice.items[existingIndex];
                     const newQuantity = existingItem.quantity + 1;
@@ -849,7 +884,8 @@ ob_start();
                         name: this.getItemName(item),
                         quantity: 1,
                         unit_price: finalPrice,
-                        original_stock: (item.item_type === 'product') ? item.stock_quantity : null
+                        original_stock: (item.item_type === 'product') ? item.stock_quantity : null,
+                        table_customer_id: assignedCustomerId
                     });
                 }
                 this.calculateTotals();
@@ -936,6 +972,24 @@ ob_start();
                 }
             },
 
+            async fetchTables() {
+                const formData = new FormData(); formData.append('action', 'get_pos_tables');
+                const response = await fetch('pos_actions.php', { method: 'POST', body: formData });
+                const result = await response.json(); if (result.success) this.tables = result.tables;
+            },
+            async createTable() {
+                if (!this.createTableForm.name.trim()) return;
+                const formData = new FormData();
+                formData.append('action', 'create_pos_table'); formData.append('name', this.createTableForm.name); formData.append('table_type', this.createTableForm.table_type);
+                const response = await fetch('pos_actions.php', { method: 'POST', body: formData }); const result = await response.json();
+                if (result.success) { this.activeTable = result.table; this.splitTableCustomers = []; this.showCreateTableModal = false; this.createTableForm = { name: '', table_type: 'normal' }; await this.fetchTables(); }
+            },
+            async addSplitCustomer() {
+                if (!this.activeTable || this.activeTable.table_type !== 'split' || !this.newSplitCustomerName.trim()) return;
+                const formData = new FormData(); formData.append('action', 'add_table_customer'); formData.append('table_id', this.activeTable.id); formData.append('name', this.newSplitCustomerName);
+                const response = await fetch('pos_actions.php', { method: 'POST', body: formData }); const result = await response.json();
+                if (result.success) { this.splitTableCustomers.push(result.customer); this.newSplitCustomerName = ''; this.showAddTableCustomerModal = false; }
+            },
             // --- Shift Management ---
             openCloseShiftModal() {
                 fetch('pos_actions.php', {
