@@ -1,0 +1,522 @@
+<?php
+
+/**
+ * Reports Dashboard - MAI Salon
+ * Senior PHP/MySQL Engineer Implementation
+ */
+
+session_start();
+require_once '../config/database.php';
+require_once 'reports_engine.php';
+
+// Auth check
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header('Location: login.php');
+    exit;
+}
+
+$database = new Database();
+$db = $database->getConnection();
+$reports = new ReportsEngine($db);
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    
+    switch ($_POST['action']) {
+        case 'generate_report':
+            $report_type = $_POST['report_type'];
+            $filters = $_POST['filters'] ?? [];
+            $export_format = $_POST['export_format'] ?? 'view';
+            
+            try {
+                $data = [];
+                $title = '';
+                
+                switch ($report_type) {
+                    case 'sales':
+                        $result = $reports->getSalesReport($filters);
+                        $data = $result['data'];
+                        $summary = $result['summary'];
+                        $title = 'تقرير المبيعات';
+                        break;
+                        
+                    case 'returns':
+                        $result = $reports->getReturnsReport($filters);
+                        $data = $result['data'];
+                        $summary = $result['summary'];
+                        $title = 'تقرير المرتجعات';
+                        break;
+                        
+                    case 'inventory':
+                        $result = $reports->getInventoryReport($filters);
+                        $data = $result['data'];
+                        $summary = $result['summary'];
+                        $title = 'تقرير المخزون';
+                        break;
+                        
+                    case 'appointments':
+                        $result = $reports->getAppointmentsReport($filters);
+                        $data = $result['data'];
+                        $summary = $result['summary'];
+                        $title = 'تقرير المواعيد';
+                        break;
+                        
+                    case 'customers':
+                        $result = $reports->getCustomersReport($filters);
+                        $data = $result['data'];
+                        $summary = $result['summary'];
+                        $title = 'تقرير العملاء';
+                        break;
+                        
+                    case 'hr':
+                        $result = $reports->getHRReport($filters);
+                        $data = $result['data'];
+                        $summary = $result['summary'];
+                        $title = 'تقرير الموارد البشرية';
+                        break;
+                        
+                    case 'shifts':
+                        $result = $reports->getShiftsReport($filters);
+                        $data = $result['data'];
+                        $summary = $result['summary'];
+                        $title = 'تقرير الورديات';
+                        break;
+                }
+                
+                if ($export_format === 'csv') {
+                    $reports->exportToCSV($data, $title . '_' . date('Y-m-d'));
+                } elseif ($export_format === 'pdf') {
+                    $html = $reports->generatePDF($data, $title, $summary);
+                    echo json_encode(['success' => true, 'html' => $html]);
+                } else {
+                    echo json_encode(['success' => true, 'data' => $data, 'summary' => $summary]);
+                }
+                
+            } catch (Exception $e) {
+                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            }
+            exit;
+    }
+}
+
+// Get filter options
+$services_stmt = $db->query("SELECT id, title_ar FROM services ORDER BY title_ar");
+$services = $services_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$specialists_stmt = $db->query("SELECT id, name_ar FROM team_members WHERE position_ar LIKE '%أخصائي%' ORDER BY name_ar");
+$specialists = $specialists_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$employees_stmt = $db->query("SELECT id, name_ar FROM team_members ORDER BY name_ar");
+$employees = $employees_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+// Layout configuration
+$page_title = 'التقارير';
+$page_subtitle = 'إدارة وعرض البيانات';
+$page_actions = '';
+
+// Get current admin info
+$admin = [
+    'id' => $_SESSION['admin_id'] ?? 1,
+    'username' => $_SESSION['admin_username'] ?? 'admin'
+];
+
+ob_start();
+?>
+
+            <!-- Reports Grid -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Sales Report -->
+                    <div class="report-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer" onclick="openReportModal('sales')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="bg-green-100 p-3 rounded-lg">
+                                <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                            </div>
+                            <span class="text-sm text-gray-500">مبيعات</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">تقرير المبيعات</h3>
+                        <p class="text-gray-600 text-sm">فترة/طريقة دفع/خدمة/أخصائية</p>
+                    </div>
+
+                    <!-- Returns Report -->
+                    <div class="report-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer" onclick="openReportModal('returns')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="bg-red-100 p-3 rounded-lg">
+                                <i class="fas fa-undo text-red-600 text-xl"></i>
+                            </div>
+                            <span class="text-sm text-gray-500">مرتجعات</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">تقرير المرتجعات</h3>
+                        <p class="text-gray-600 text-sm">المبالغ المسترجعة والإلغاءات</p>
+                    </div>
+
+                    <!-- Inventory Report -->
+                    <div class="report-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer" onclick="openReportModal('inventory')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-boxes text-blue-600 text-xl"></i>
+                            </div>
+                            <span class="text-sm text-gray-500">مخزون</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">تقرير المخزون</h3>
+                        <p class="text-gray-600 text-sm">جرد/فروقات/مخزون منخفض</p>
+                    </div>
+
+                    <!-- Appointments Report -->
+                    <div class="report-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer" onclick="openReportModal('appointments')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="bg-purple-100 p-3 rounded-lg">
+                                <i class="fas fa-calendar-check text-purple-600 text-xl"></i>
+                            </div>
+                            <span class="text-sm text-gray-500">مواعيد</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">تقرير المواعيد</h3>
+                        <p class="text-gray-600 text-sm">حضور/إلغاء/عدم حضور</p>
+                    </div>
+
+                    <!-- Customers Report -->
+                    <div class="report-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer" onclick="openReportModal('customers')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="bg-yellow-100 p-3 rounded-lg">
+                                <i class="fas fa-users text-yellow-600 text-xl"></i>
+                            </div>
+                            <span class="text-sm text-gray-500">عملاء</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">تقرير العملاء</h3>
+                        <p class="text-gray-600 text-sm">إنفاق/ولاء/نشاط</p>
+                    </div>
+
+                    <!-- HR Report -->
+                    <div class="report-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer" onclick="openReportModal('hr')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="bg-indigo-100 p-3 rounded-lg">
+                                <i class="fas fa-user-tie text-indigo-600 text-xl"></i>
+                            </div>
+                            <span class="text-sm text-gray-500">موارد بشرية</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">تقرير الموارد البشرية</h3>
+                        <p class="text-gray-600 text-sm">حضور/أداء/بونص</p>
+                    </div>
+
+                    <!-- Shifts Report -->
+                    <div class="report-card bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer" onclick="openReportModal('shifts')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="bg-teal-100 p-3 rounded-lg">
+                                <i class="fas fa-clock text-teal-600 text-xl"></i>
+                            </div>
+                            <span class="text-sm text-gray-500">ورديات</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">تقرير الورديات</h3>
+                        <p class="text-gray-600 text-sm">فتح/إغلاق/فرق كاش</p>
+                    </div>
+                </div>
+            </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl w-full max-w-6xl mx-4 max-h-screen overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 id="reportTitle" class="text-xl font-semibold text-gray-900"></h3>
+                    <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
+                <form id="reportFilters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Date Range -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">من تاريخ</label>
+                        <input type="date" name="date_from" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">إلى تاريخ</label>
+                        <input type="date" name="date_to" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Payment Method (Sales only) -->
+                    <div id="paymentMethodFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">طريقة الدفع</label>
+                        <select name="payment_method" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">جميع الطرق</option>
+                            <option value="cash">نقدي</option>
+                            <option value="card">بطاقة</option>
+                            <option value="transfer">تحويل</option>
+                        </select>
+                    </div>
+
+                    <!-- Service Filter -->
+                    <div id="serviceFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الخدمة</label>
+                        <select name="service_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">جميع الخدمات</option>
+                            <?php foreach ($services as $service): ?>
+                            <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['title_ar']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Specialist Filter -->
+                    <div id="specialistFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الأخصائية</label>
+                        <select name="specialist_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">جميع الأخصائيات</option>
+                            <?php foreach ($specialists as $specialist): ?>
+                            <option value="<?= $specialist['id'] ?>"><?= htmlspecialchars($specialist['name_ar']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Employee Filter (HR only) -->
+                    <div id="employeeFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الموظف</label>
+                        <select name="employee_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">جميع الموظفين</option>
+                            <?php foreach ($employees as $employee): ?>
+                            <option value="<?= $employee['id'] ?>"><?= htmlspecialchars($employee['name_ar']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Category Filter (Inventory only) -->
+                    <div id="categoryFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الفئة</label>
+                        <select name="category" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">جميع الفئات</option>
+                            <option value="skincare">عناية بالبشرة</option>
+                            <option value="haircare">عناية بالشعر</option>
+                            <option value="tools">أدوات</option>
+                            <option value="supplies">مستلزمات</option>
+                        </select>
+                    </div>
+
+                    <!-- Low Stock Filter (Inventory only) -->
+                    <div id="lowStockFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">مخزون منخفض</label>
+                        <select name="low_stock" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">جميع المنتجات</option>
+                            <option value="1">مخزون منخفض فقط</option>
+                        </select>
+                    </div>
+
+                    <!-- Loyalty Tier Filter (Customers only) -->
+                    <div id="loyaltyFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">مستوى الولاء</label>
+                        <select name="loyalty_tier" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">جميع المستويات</option>
+                            <option value="bronze">برونزي</option>
+                            <option value="silver">فضي</option>
+                            <option value="gold">ذهبي</option>
+                        </select>
+                    </div>
+
+                    <!-- Min Spending Filter (Customers only) -->
+                    <div id="spendingFilter" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الحد الأدنى للإنفاق</label>
+                        <input type="number" name="min_spending" placeholder="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </form>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 mt-4">
+                    <button onclick="generateReport('view')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-eye ml-2"></i>
+                        عرض التقرير
+                    </button>
+                    <button onclick="generateReport('csv')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-file-csv ml-2"></i>
+                        تصدير CSV
+                    </button>
+                    <button onclick="generateReport('pdf')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-file-pdf ml-2"></i>
+                        تصدير PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Content -->
+            <div id="reportContent" class="p-6">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                    <p>اختر الفلاتر واضغط "عرض التقرير" لبدء التحليل</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentReportType = '';
+
+        function openReportModal(reportType) {
+            currentReportType = reportType;
+            document.getElementById('reportModal').classList.remove('hidden');
+            document.getElementById('reportModal').classList.add('flex');
+            
+            // Set report title
+            const titles = {
+                'sales': 'تقرير المبيعات',
+                'returns': 'تقرير المرتجعات',
+                'inventory': 'تقرير المخزون',
+                'appointments': 'تقرير المواعيد',
+                'customers': 'تقرير العملاء',
+                'hr': 'تقرير الموارد البشرية',
+                'shifts': 'تقرير الورديات'
+            };
+            document.getElementById('reportTitle').textContent = titles[reportType];
+            
+            // Show/hide relevant filters
+            hideAllFilters();
+            showFiltersForReport(reportType);
+            
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const lastMonth = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            document.querySelector('input[name="date_to"]').value = today.toISOString().split('T')[0];
+            document.querySelector('input[name="date_from"]').value = lastMonth.toISOString().split('T')[0];
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').classList.add('hidden');
+            document.getElementById('reportModal').classList.remove('flex');
+            document.getElementById('reportContent').innerHTML = `
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                    <p>اختر الفلاتر واضغط "عرض التقرير" لبدء التحليل</p>
+                </div>
+            `;
+        }
+
+        function hideAllFilters() {
+            const filters = ['paymentMethodFilter', 'serviceFilter', 'specialistFilter', 'employeeFilter', 
+                           'categoryFilter', 'lowStockFilter', 'loyaltyFilter', 'spendingFilter'];
+            filters.forEach(filter => {
+                document.getElementById(filter).classList.add('hidden');
+            });
+        }
+
+        function showFiltersForReport(reportType) {
+            switch(reportType) {
+                case 'sales':
+                    document.getElementById('paymentMethodFilter').classList.remove('hidden');
+                    document.getElementById('serviceFilter').classList.remove('hidden');
+                    document.getElementById('specialistFilter').classList.remove('hidden');
+                    break;
+                case 'appointments':
+                    document.getElementById('specialistFilter').classList.remove('hidden');
+                    break;
+                case 'inventory':
+                    document.getElementById('categoryFilter').classList.remove('hidden');
+                    document.getElementById('lowStockFilter').classList.remove('hidden');
+                    break;
+                case 'customers':
+                    document.getElementById('loyaltyFilter').classList.remove('hidden');
+                    document.getElementById('spendingFilter').classList.remove('hidden');
+                    break;
+                case 'hr':
+                    document.getElementById('employeeFilter').classList.remove('hidden');
+                    break;
+            }
+        }
+
+        function generateReport(format) {
+            const formData = new FormData(document.getElementById('reportFilters'));
+            formData.append('action', 'generate_report');
+            formData.append('report_type', currentReportType);
+            formData.append('export_format', format);
+
+            if (format === 'csv') {
+                // For CSV export, submit form directly
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'reports.php';
+                
+                for (let [key, value] of formData.entries()) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                return;
+            }
+
+            fetch('reports.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (format === 'pdf') {
+                        // Open PDF in new window
+                        const newWindow = window.open();
+                        newWindow.document.write(data.html);
+                        newWindow.document.close();
+                    } else {
+                        // Display report data
+                        displayReportData(data.data, data.summary);
+                    }
+                } else {
+                    alert('خطأ في إنشاء التقرير: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('حدث خطأ في الاتصال');
+            });
+        }
+
+        function displayReportData(data, summary) {
+            let html = '';
+            
+            // Summary section
+            if (summary) {
+                html += '<div class="bg-blue-50 rounded-lg p-4 mb-6"><h4 class="font-semibold text-gray-900 mb-3">ملخص التقرير</h4>';
+                for (let [key, value] of Object.entries(summary)) {
+                    html += `<div class="flex justify-between py-1"><span>${key}:</span><span class="font-medium">${value}</span></div>`;
+                }
+                html += '</div>';
+            }
+            
+            // Data table
+            if (data && data.length > 0) {
+                html += '<div class="overflow-x-auto"><table class="w-full border-collapse border border-gray-300">';
+                html += '<thead class="bg-gray-50"><tr>';
+                
+                // Headers
+                for (let key of Object.keys(data[0])) {
+                    html += `<th class="border border-gray-300 px-4 py-2 text-right">${key}</th>`;
+                }
+                html += '</tr></thead><tbody>';
+                
+                // Data rows
+                for (let row of data) {
+                    html += '<tr class="hover:bg-gray-50">';
+                    for (let value of Object.values(row)) {
+                        html += `<td class="border border-gray-300 px-4 py-2">${value || '-'}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody></table></div>';
+            } else {
+                html += '<div class="text-center text-gray-500 py-8"><p>لا توجد بيانات للعرض</p></div>';
+            }
+            
+            document.getElementById('reportContent').innerHTML = html;
+        }
+    </script>
+
+
+<?php
+$page_content = ob_get_clean();
+include 'includes/admin_layout.php';
+?>

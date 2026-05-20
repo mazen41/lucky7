@@ -1,0 +1,18 @@
+This directory contains all website images:
+
+- hero-image.jpg - Main hero section image
+- about-team.jpg - About section team image
+- team/ - Directory for team member photos
+  - ren.jpg
+  - red.jpg
+  - grace.jpg
+  - sada.jpg
+  - may.jpg
+- services/ - Directory for service images
+  - hair-care.jpg
+  - facial-makeup.jpg
+  - nail-care.jpg
+  - lashes-brows.jpg
+  - body-care.jpg
+
+Note: Replace placeholder images with actual salon photos for production use.

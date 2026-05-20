@@ -1,0 +1,350 @@
+/* ==================================================
+   88mm Thermal Receipt Printing Stylesheet
+   Optimized for Arabic RTL content
+   ================================================== */
+
+/* Reset and base styles for thermal printing */
+@media print {
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    
+    @page {
+        size: 80mm auto;
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        line-height: 1.2;
+        color: #000;
+        background: white;
+        direction: rtl;
+        text-align: right;
+    }
+    
+    /* Hide all non-receipt elements */
+    body > *:not(.receipt-container) {
+        display: none !important;
+    }
+    
+    /* Receipt container */
+    .receipt-container {
+        display: block !important;
+        width: 80mm;
+        max-width: 80mm;
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+    
+    .receipt {
+        width: 80mm;
+        max-width: 80mm;
+        padding: 3mm 2mm 5mm 2mm;
+        margin: 0;
+        background: white;
+        font-size: 11px;
+        line-height: 1.3;
+        direction: rtl;
+        text-align: right;
+    }
+    
+    /* Header styling */
+    .receipt-header {
+        text-align: center;
+        margin-bottom: 4mm;
+        direction: rtl;
+    }
+    
+    .receipt-logo {
+        max-width: 60mm;
+        height: auto;
+        margin-bottom: 2mm;
+    }
+    
+    .business-name {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 1mm;
+        text-align: center;
+    }
+    
+    .business-info {
+        font-size: 9px;
+        line-height: 1.2;
+        text-align: center;
+        margin-bottom: 1mm;
+    }
+    
+    /* Invoice info section */
+    .receipt-info {
+        margin: 3mm 0;
+        font-size: 10px;
+    }
+    
+    .info-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1mm;
+        direction: rtl;
+    }
+    
+    .info-line .label {
+        font-weight: bold;
+        min-width: 25mm;
+    }
+    
+    .info-line .value {
+        flex: 1;
+        text-align: left;
+        direction: ltr;
+    }
+    
+    /* Customer info */
+    .customer-info {
+        margin: 3mm 0;
+        font-size: 10px;
+        border-top: 1px dashed #000;
+        border-bottom: 1px dashed #000;
+        padding: 2mm 0;
+    }
+    
+    /* Items table */
+    .receipt-items {
+        margin: 3mm 0;
+        width: 100%;
+    }
+    
+    .items-header {
+        font-weight: bold;
+        font-size: 10px;
+        border-bottom: 1px solid #000;
+        padding-bottom: 1mm;
+        margin-bottom: 2mm;
+        text-align: center;
+    }
+    
+    .item-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5mm;
+        font-size: 10px;
+        direction: rtl;
+    }
+    
+    .item-name {
+        flex: 1;
+        font-weight: bold;
+        padding-left: 2mm;
+        line-height: 1.2;
+    }
+    
+    .item-details {
+        font-size: 9px;
+        color: #555;
+        margin-top: 0.5mm;
+    }
+    
+    .item-qty-price {
+        min-width: 25mm;
+        text-align: left;
+        direction: ltr;
+        font-size: 9px;
+    }
+    
+    .item-total {
+        min-width: 15mm;
+        text-align: left;
+        direction: ltr;
+        font-weight: bold;
+    }
+    
+    /* Totals section */
+    .receipt-totals {
+        margin: 3mm 0;
+        border-top: 1px dashed #000;
+        padding-top: 2mm;
+    }
+    
+    .total-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1mm;
+        font-size: 10px;
+        direction: rtl;
+    }
+    
+    .total-line.grand-total {
+        font-size: 12px;
+        font-weight: bold;
+        border-top: 1px solid #000;
+        border-bottom: 2px solid #000;
+        padding: 1mm 0;
+        margin: 2mm 0;
+    }
+    
+    .total-label {
+        font-weight: bold;
+    }
+    
+    .total-amount {
+        font-weight: bold;
+        text-align: left;
+        direction: ltr;
+    }
+    
+    /* Payment method */
+    .payment-info {
+        margin: 3mm 0;
+        font-size: 10px;
+        text-align: center;
+        border-top: 1px dashed #000;
+        padding-top: 2mm;
+    }
+    
+    .payment-method {
+        font-weight: bold;
+        margin-bottom: 1mm;
+    }
+    
+    /* ZATCA QR Code */
+    .zatca-section {
+        margin: 3mm 0;
+        text-align: center;
+        border-top: 1px dashed #000;
+        padding-top: 2mm;
+    }
+    
+    .qr-code {
+        margin: 2mm auto;
+        max-width: 20mm;
+        height: auto;
+    }
+    
+    .zatca-text {
+        font-size: 8px;
+        margin-top: 1mm;
+    }
+    
+    /* Footer */
+    .receipt-footer {
+        margin-top: 4mm;
+        text-align: center;
+        font-size: 9px;
+        border-top: 1px dashed #000;
+        padding-top: 2mm;
+    }
+    
+    .thank-you {
+        font-weight: bold;
+        margin-bottom: 2mm;
+    }
+    
+    .return-policy {
+        font-size: 8px;
+        line-height: 1.3;
+        margin-bottom: 2mm;
+    }
+    
+    /* Dividers */
+    .divider {
+        border-top: 1px dashed #000;
+        margin: 3mm 0;
+        height: 0;
+    }
+    
+    .solid-divider {
+        border-top: 1px solid #000;
+        margin: 2mm 0;
+        height: 0;
+    }
+    
+    /* Utilities */
+    .text-center {
+        text-align: center !important;
+    }
+    
+    .text-left {
+        text-align: left !important;
+        direction: ltr !important;
+    }
+    
+    .text-right {
+        text-align: right !important;
+        direction: rtl !important;
+    }
+    
+    .bold {
+        font-weight: bold !important;
+    }
+    
+    .small {
+        font-size: 9px !important;
+    }
+    
+    .tiny {
+        font-size: 8px !important;
+    }
+    
+    /* Arabic font optimization for thermal printers */
+    .arabic-text {
+        font-family: 'Courier New', 'Tahoma', monospace;
+        direction: rtl;
+        text-align: right;
+    }
+    
+    /* English/numbers alignment */
+    .english-text {
+        font-family: 'Courier New', monospace;
+        direction: ltr;
+        text-align: left;
+    }
+    
+    /* Specialist info for services */
+    .specialist-info {
+        font-size: 8px;
+        color: #666;
+        margin-top: 0.5mm;
+        direction: rtl;
+    }
+    
+    /* Discount info */
+    .discount-line {
+        color: #d9534f;
+        font-style: italic;
+    }
+    
+    /* Tax info */
+    .tax-line {
+        color: #5cb85c;
+    }
+}
+
+/* Screen preview styles (for development) */
+@media screen {
+    .receipt-container {
+        max-width: 80mm;
+        margin: 20px auto;
+        border: 1px solid #ccc;
+        background: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .receipt {
+        padding: 10px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        line-height: 1.3;
+        direction: rtl;
+    }
+}

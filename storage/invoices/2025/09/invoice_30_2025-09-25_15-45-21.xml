@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
+    <ID></ID>
+    <IssueDate>2025-09-25</IssueDate>
+    <IssueTime>15:45:21</IssueTime>
+    <InvoiceTypeCode>388</InvoiceTypeCode>
+    <DocumentCurrencyCode>SAR</DocumentCurrencyCode>
+    <TaxCurrencyCode>SAR</TaxCurrencyCode>
+    
+    <AccountingSupplierParty>
+        <Party>
+            <PartyName>
+                <Name>صالون MAI للجمال</Name>
+            </PartyName>
+            <PartyTaxScheme>
+                <CompanyID>123456789012345</CompanyID>
+            </PartyTaxScheme>
+        </Party>
+    </AccountingSupplierParty>
+    
+    <LegalMonetaryTotal>
+        <LineExtensionAmount currencyID="SAR">0.00</LineExtensionAmount>
+        <TaxExclusiveAmount currencyID="SAR">-24.00</TaxExclusiveAmount>
+        <TaxInclusiveAmount currencyID="SAR">0.00</TaxInclusiveAmount>
+        <PayableAmount currencyID="SAR">0.00</PayableAmount>
+    </LegalMonetaryTotal>
+</Invoice>

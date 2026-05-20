@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
+  <InvoiceHeader>
+    <ID>INV-20250914-0004</ID>
+    <IssueDate>2025-09-14</IssueDate>
+    <IssueTime>15:48:00</IssueTime>
+  </InvoiceHeader>
+  <SellerParty>
+    <Name>صالون MAI للجمال</Name>
+    <VATNumber>123456789012345</VATNumber>
+  </SellerParty>
+  <InvoiceLines>
+    <InvoiceLine>
+      <ID>1</ID>
+      <Name>العناية بالوجه والمكياج</Name>
+      <Quantity>1</Quantity>
+      <UnitPrice>200.00</UnitPrice>
+      <LineTotal>200.00</LineTotal>
+    </InvoiceLine>
+  </InvoiceLines>
+  <InvoiceTotals>
+    <TaxExclusiveAmount>200.00</TaxExclusiveAmount>
+    <TaxAmount>30.00</TaxAmount>
+    <TaxInclusiveAmount>0.00</TaxInclusiveAmount>
+  </InvoiceTotals>
+  <QRCode>ARvYtdin2YTZiNmGIE1BSSDZhNmE2KzZhdin2YQCDzEyMzQ1Njc4OTAxMjM0NQMUMjAyNS0wOS0xNFQxNTo0ODowMFoEBDAuMDAFBDAuMDA=</QRCode>
+</Invoice>

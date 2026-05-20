@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #fff;
+    font-family: 'Tajawal', sans-serif !important;
+}
+.receipt-container {
+    width: 100%; /* mPDF controls the width */
+    margin: 0 auto;
+    background: #fff;
+    padding: 10px;
+    color: #333;
+    direction: rtl;
+    font-size: 10pt;
+}
+.header {
+    text-align: center;
+    border-bottom: 2px dashed #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+.header h2 {
+    margin: 0;
+    font-size: 16pt;
+    color: #111;
+}
+.header p {
+    margin: 2px 0;
+    font-size: 9pt;
+}
+.invoice-details,
+.payment-details {
+    font-size: 10pt;
+    margin-bottom: 15px;
+}
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+.detail-row.sub-detail {
+    padding-right: 15px;
+    font-size: 9pt;
+    color: #555;
+}
+.detail-row span:first-child {
+    font-weight: bold;
+}
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+.items-table thead {
+    border-bottom: 1px solid #555;
+}
+.items-table th {
+    padding: 5px;
+    text-align: right;
+    font-size: 9pt;
+    font-weight: bold;
+}
+.items-table th:nth-child(2),
+.items-table th:nth-child(3),
+.items-table th:nth-child(4) {
+    text-align: center;
+}
+.item-row td {
+    padding: 6px 5px;
+    font-size: 10pt;
+    vertical-align: top;
+}
+.item-name {
+    text-align: right;
+}
+.specialist-info {
+    font-size: 8pt;
+    color: #555;
+    padding-top: 4px;
+}
+.item-qty,
+.item-price,
+.item-total {
+    text-align: center;
+}
+.summary-table {
+    width: 100%;
+    margin-top: 15px;
+    border-top: 2px dashed #ccc;
+    padding-top: 10px;
+}
+.summary-row {
+    font-size: 10pt;
+}
+.summary-row td {
+    padding: 4px;
+}
+.summary-row td:last-child {
+    text-align: left;
+    font-weight: bold;
+}
+.summary-row.total {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #000;
+}
+.summary-row.total td {
+    padding-top: 8px;
+}
+.payment-details {
+    border-top: 2px dashed #ccc;
+    padding-top: 10px;
+}
+.qr-code {
+    text-align: center;
+    padding: 15px 0;
+}
+.qr-code img {
+    width: 120px;
+    height: 120px;
+    display: block;
+    margin: 0 auto;
+}
+.footer {
+    text-align: center;
+    border-top: 2px dashed #ccc;
+    padding-top: 10px;
+    font-size: 9pt;
+}
+.footer p {
+    margin: 2px 0;
+} 
