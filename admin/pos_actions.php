@@ -63,6 +63,29 @@ try {
     }
     
     switch ($action) {
+        case 'get_pos_tables':
+            $stmt = $db->query("SELECT id, name, table_type, status FROM pos_tables ORDER BY id DESC");
+            echo json_encode(['success' => true, 'tables' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            break;
+
+        case 'create_pos_table':
+            $name = trim($_POST['name'] ?? '');
+            $tableType = ($_POST['table_type'] ?? 'normal') === 'split' ? 'split' : 'normal';
+            if ($name === '') throw new Exception('Table name is required');
+            $stmt = $db->prepare("INSERT INTO pos_tables (name, table_type, status, created_at, created_by) VALUES (?, ?, 'open', NOW(), ?)");
+            $stmt->execute([$name, $tableType, $admin['id']]);
+            echo json_encode(['success' => true, 'table' => ['id' => $db->lastInsertId(), 'name' => $name, 'table_type' => $tableType, 'status' => 'open']]);
+            break;
+
+        case 'add_table_customer':
+            $tableId = intval($_POST['table_id'] ?? 0);
+            $name = trim($_POST['name'] ?? '');
+            if ($tableId <= 0 || $name === '') throw new Exception('Invalid table customer data');
+            $stmt = $db->prepare("INSERT INTO pos_table_customers (table_id, name, created_at) VALUES (?, ?, NOW())");
+            $stmt->execute([$tableId, $name]);
+            echo json_encode(['success' => true, 'customer' => ['id' => $db->lastInsertId(), 'table_id' => $tableId, 'name' => $name]]);
+            break;
+
         case 'search_customers':
             $nameQuery = trim($_POST['name'] ?? '');
             if (empty($nameQuery)) {
